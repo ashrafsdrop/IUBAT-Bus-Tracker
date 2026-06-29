@@ -11,20 +11,31 @@ function App() {
   const systemTheme = useColorScheme();
   const [currentScreen, setCurrentScreen] = useState('Welcome');
   const [isDarkMode, setIsDarkMode] = useState(systemTheme === 'dark');
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+
+  const handleNavigate = (screen: string, routeId?: string) => {
+    if (routeId) setSelectedRouteId(routeId);
+    setCurrentScreen(screen);
+  };
 
   return (
     <SafeAreaProvider>
       {currentScreen === 'Welcome' && (
-        <WelcomeScreen onNavigate={(screen) => setCurrentScreen(screen)} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+        <WelcomeScreen onNavigate={handleNavigate} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
       )}
       {currentScreen === 'Selection' && (
-        <SelectionScreen onBack={() => setCurrentScreen('Welcome')} onNavigate={(screen) => setCurrentScreen(screen)} isDarkMode={isDarkMode} />
+        <SelectionScreen onBack={() => setCurrentScreen('Welcome')} onNavigate={handleNavigate} isDarkMode={isDarkMode} />
       )}
       {currentScreen === 'Seeder' && (
         <SeederScreen onBack={() => setCurrentScreen('Welcome')} isDarkMode={isDarkMode} />
       )}
       {currentScreen === 'Map' && (
-        <MapScreen onBack={() => setCurrentScreen('Welcome')} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+        <MapScreen 
+          onBack={() => setCurrentScreen('Welcome')} 
+          isDarkMode={isDarkMode} 
+          setIsDarkMode={setIsDarkMode} 
+          selectedRouteId={selectedRouteId} 
+        />
       )}
     </SafeAreaProvider>
   );

@@ -108,7 +108,7 @@ const passengerBgOptions: any = {
     foregroundServiceType: ['location'], 
 };
 
-const MapScreen = ({ onBack, isDarkMode, setIsDarkMode }: { onBack?: () => void, isDarkMode: boolean, setIsDarkMode: (val: boolean) => void }) => {
+const MapScreen = ({ onBack, isDarkMode, setIsDarkMode, selectedRouteId }: { onBack?: () => void, isDarkMode: boolean, setIsDarkMode: (val: boolean) => void, selectedRouteId?: string | null }) => {
   const insets = useSafeAreaInsets();
   const [userLocation, setUserLocation] = useState<[number, number]>([23.8815, 90.3888]); // Default to campus
   
@@ -288,6 +288,9 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode }: { onBack?: () => void,
             if ((bus.timestamp && (now - bus.timestamp > twoHours)) || (bus.reports && bus.reports >= 3)) {
                 // Delete locally so it vanishes from the map, but leave the database untouched
                 delete buses[busName]; 
+            } else if (selectedRouteId && (bus.routeId || busName) !== selectedRouteId) {
+                // Filter out buses that don't match the selected route
+                delete buses[busName];
             }
         }
 
@@ -301,6 +304,24 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode }: { onBack?: () => void,
   // Safely inject buses into the webview only when both the map is ready and we have data
   useEffect(() => {
     if (isMapReady && latestBuses && webviewRef.current) {
+        let extraJS = "";
+        if (selectedRouteId) {
+            const busName = Object.keys(latestBuses).find(key => {
+                const b = latestBuses[key];
+                return (b.routeId || key) === selectedRouteId;
+            });
+            if (busName) {
+                const routeName = ROUTES.find(r => r.id === selectedRouteId)?.name || selectedRouteId;
+                extraJS = `
+                    setTimeout(function() {
+                        if (window.busMarkers && window.busMarkers['${busName}']) {
+                            showRouteForBus(window.busMarkers['${busName}'], '${busName}', '${routeName}');
+                        }
+                    }, 500);
+                `;
+            }
+        }
+
         webviewRef.current.injectJavaScript(`
           if (typeof updateFirebaseBuses === 'function') {
             updateFirebaseBuses(${JSON.stringify(latestBuses)});
@@ -308,10 +329,11 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode }: { onBack?: () => void,
           if (typeof setRoutesData === 'function') {
             setRoutesData(${JSON.stringify(ROUTES)});
           }
+          ${extraJS}
           true;
         `);
     }
-  }, [isMapReady, latestBuses]);
+  }, [isMapReady, latestBuses, selectedRouteId]);
 
   const leafletHTML = `
     <!DOCTYPE html>
@@ -504,12 +526,14 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode }: { onBack?: () => void,
                 }
 
                 var now = new Date();
-                var isEvening = now.getHours() > 17 || (now.getHours() === 17 && now.getMinutes() >= 20);
+                var currentHour = now.getHours();
+                // From 6 AM to 1 PM (13:00), buses head TO campus. 
+                // After 1 PM, they head FROM campus back to the city.
+                var isHeadingToCampus = currentHour >= 6 && currentHour < 13;
                 var campusLoc = L.latLng(23.8815, 90.3888);
                 var busLoc = activeBusMarker.getLatLng();
                 
-                // Morning: Bus -> Campus. Evening: Campus -> Bus
-                var waypointsToRoute = isEvening ? [campusLoc, busLoc] : [busLoc, campusLoc];
+                var waypointsToRoute = isHeadingToCampus ? [busLoc, campusLoc] : [campusLoc, busLoc];
 
                 tempRoutingControl = L.Routing.control({
                     waypoints: waypointsToRoute,
@@ -531,7 +555,7 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode }: { onBack?: () => void,
                     activeRouteLine = L.polyline(coordinates, { color: '#147C41', opacity: 0.8, weight: 6 }).addTo(map);
                     
                     var realEtaMinutes = Math.round(route.summary.totalTime / 60);
-                    var etaText = isEvening ? realEtaMinutes + " min from Campus" : realEtaMinutes + " min to Campus";
+                    var etaText = isHeadingToCampus ? realEtaMinutes + " min to Campus" : realEtaMinutes + " min from Campus";
 
                     if (window.ReactNativeWebView) {
                         window.ReactNativeWebView.postMessage(JSON.stringify({

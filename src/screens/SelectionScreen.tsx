@@ -9,7 +9,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const SelectionScreen = ({ onBack, onNavigate }: { onBack?: () => void, onNavigate?: (screen: string) => void }) => {
+const SelectionScreen = ({ onBack, onNavigate, isDarkMode }: { onBack?: () => void, onNavigate?: (screen: string, routeId?: string) => void, isDarkMode?: boolean }) => {
   const insets = useSafeAreaInsets();
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
   const [expandedRoute, setExpandedRoute] = useState<string | null>(null);
@@ -85,14 +85,24 @@ const SelectionScreen = ({ onBack, onNavigate }: { onBack?: () => void, onNaviga
               const lastStop = route.stops[route.stops.length - 1];
 
               return (
-                <View key={route.id} className="mb-3">
+                <View 
+                  key={route.id} 
+                  className={`mb-3 ${isExpanded ? '' : 'rounded-2xl'}`}
+                  style={!isExpanded ? { 
+                    elevation: 2, 
+                    shadowColor: '#000', 
+                    shadowOpacity: 0.05, 
+                    shadowRadius: 10,
+                    backgroundColor: isSelected ? '#F0FDF4' : '#ffffff',
+                    borderRadius: 16
+                  } : {}}
+                >
                   <TouchableOpacity
                     activeOpacity={0.9}
                     onPress={() => handleRouteSelect(route.id)}
                     className={`p-4 border-2 z-10 ${
-                      isSelected ? 'border-[#147C41] bg-[#F0FDF4]' : 'border-transparent bg-white'
-                    } ${isExpanded ? 'rounded-t-2xl border-b-0' : 'rounded-2xl shadow-sm'}`}
-                    style={!isExpanded ? { elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 } : {}}
+                      isSelected ? 'border-[#147C41] bg-[#F0FDF4]' : 'border-transparent bg-transparent'
+                    } ${isExpanded ? 'rounded-t-2xl border-b-0 bg-white' : 'rounded-2xl'}`}
                   >
                     <View className="flex-row items-start justify-between">
                       <View className="flex-1 pr-4">
@@ -165,7 +175,7 @@ const SelectionScreen = ({ onBack, onNavigate }: { onBack?: () => void, onNaviga
       <View className="absolute bottom-0 left-0 right-0 p-6 bg-[#FCFBF8]/95 border-t border-slate-100">
         <Button 
           title="Continue to Map"
-          onPress={() => onNavigate && onNavigate('Map')}
+          onPress={() => onNavigate && onNavigate('Map', selectedRoute || undefined)}
           disabled={!isContinueEnabled}
         />
       </View>
