@@ -30,6 +30,8 @@ const WelcomeScreen = ({ onNavigate, isDarkMode, setIsDarkMode }: { onNavigate?:
   const card2Slide = useRef(new Animated.Value(60)).current;
   const card1Opacity = useRef(new Animated.Value(0)).current;
   const card2Opacity = useRef(new Animated.Value(0)).current;
+  const card3Slide = useRef(new Animated.Value(60)).current;
+  const card3Opacity = useRef(new Animated.Value(0)).current;
 
   // Continuous animation refs
   const orb1Float = useRef(new Animated.Value(0)).current;
@@ -155,6 +157,20 @@ const WelcomeScreen = ({ onNavigate, isDarkMode, setIsDarkMode }: { onNavigate?:
           useNativeDriver: true,
         }),
       ]),
+      // 5. Card 3 pops up
+      Animated.parallel([
+        Animated.spring(card3Slide, {
+          toValue: 0,
+          friction: 7,
+          tension: 70,
+          useNativeDriver: true,
+        }),
+        Animated.timing(card3Opacity, {
+          toValue: 1,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+      ]),
     ]).start();
   }, []);
 
@@ -177,6 +193,7 @@ const WelcomeScreen = ({ onNavigate, isDarkMode, setIsDarkMode }: { onNavigate?:
 
   const studentScale = useRef(new Animated.Value(1)).current;
   const driverScale = useRef(new Animated.Value(1)).current;
+  const searchScale = useRef(new Animated.Value(1)).current;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: isDarkMode ? '#0F172A' : '#FEFDF5' }]}>
@@ -267,7 +284,7 @@ const WelcomeScreen = ({ onNavigate, isDarkMode, setIsDarkMode }: { onNavigate?:
               activeOpacity={0.9}
               onPressIn={() => handlePressIn(studentScale)}
               onPressOut={() => handlePressOut(studentScale)}
-              onPress={() => onNavigate && onNavigate('Selection')}
+              onPress={() => onNavigate && onNavigate('Map')}
               style={[styles.card, { backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF', borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(20, 124, 65, 0.08)' }]}
             >
               <View style={styles.cardContent}>
@@ -323,6 +340,37 @@ const WelcomeScreen = ({ onNavigate, isDarkMode, setIsDarkMode }: { onNavigate?:
               <View style={[styles.liveIndicator, { borderTopColor: isDarkMode ? '#334155' : '#F1F5F9' }]}>
                 <Animated.View style={[styles.liveDot, { opacity: liveDotPulse }]} />
                 <Text style={[styles.liveText, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>LIVE LOCATION</Text>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Search Route Card */}
+          <Animated.View style={[
+            { 
+              transform: [{ translateY: card3Slide }, { scale: searchScale }],
+              opacity: card3Opacity,
+            }
+          ]}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPressIn={() => handlePressIn(searchScale)}
+              onPressOut={() => handlePressOut(searchScale)}
+              onPress={() => onNavigate && onNavigate('Selection')}
+              style={[styles.card, { backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF', borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(242, 225, 64, 0.15)' }]}
+            >
+              <View style={styles.cardContent}>
+                <View style={[styles.iconContainer, styles.searchIconBg]}>
+                  <Text style={styles.iconText}>🔍</Text>
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={[styles.cardTitle, { color: isDarkMode ? '#F8FAFC' : '#1E293B' }]}>Find My Route</Text>
+                  <Text style={[styles.cardDescription, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>
+                    Search by destination to find which bus to take
+                  </Text>
+                </View>
+                <View style={[styles.arrowContainer, { backgroundColor: isDarkMode ? '#334155' : '#F1F5F9' }]}>
+                  <Text style={styles.arrowText}>→</Text>
+                </View>
               </View>
             </TouchableOpacity>
           </Animated.View>
@@ -400,7 +448,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 24,
   },
   logoWrapper: {
     alignItems: 'center',
@@ -542,6 +590,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(196, 30, 58, 0.08)',
     borderWidth: 1.5,
     borderColor: 'rgba(196, 30, 58, 0.15)',
+  },
+  searchIconBg: {
+    backgroundColor: 'rgba(242, 225, 64, 0.1)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(242, 225, 64, 0.2)',
   },
   iconText: {
     fontSize: 26,
