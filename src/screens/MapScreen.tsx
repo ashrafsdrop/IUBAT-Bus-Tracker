@@ -32,6 +32,8 @@ const getUserLocation = () => new Promise<{lat: number, lng: number}>((resolve) 
 import { ref, onValue, remove, runTransaction } from 'firebase/database';
 import { database } from '../firebaseConfig';
 import { ROUTES } from '../data/routes';
+import Header from '../components/Header';
+import ThemeToggle from '../components/ThemeToggle';
 
 const passengerBgTask = async (taskDataArguments: any) => {
     const { delay } = taskDataArguments;
@@ -690,26 +692,13 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode }: { onBack?: () => void,
       </Animated.View>
 
       {/* Header Overlay */}
-      <View 
-        className={"absolute top-0 left-0 right-0 z-10 flex-row items-center justify-between px-4 py-3 border-b " + (isDarkMode ? "bg-slate-900/95 border-slate-700/50" : "bg-[#FCFBF8]/95 border-slate-200")}
-        style={{ paddingTop: insets.top + 12 }}
-      >
-        <TouchableOpacity 
-          onPress={() => {
-            if (onBack) onBack();
-          }} 
-          className={"w-10 h-10 items-center justify-center rounded-full border shadow-sm " + (isDarkMode ? "bg-slate-800 border-slate-700/50" : "bg-white border-slate-200")} style={{ elevation: 3 }}>
-          <Text className="text-[#147C41] text-3xl font-bold leading-none">←</Text>
-        </TouchableOpacity>
-        <Text className={"text-xl font-bold " + (isDarkMode ? "text-slate-100" : "text-slate-800")}>
-          Live Tracking
-        </Text>
-        <TouchableOpacity 
-          onPress={() => setIsDarkMode(!isDarkMode)} 
-          className={"w-10 h-10 items-center justify-center rounded-full shadow-sm " + (isDarkMode ? "bg-slate-800" : "bg-white border border-slate-200")} style={{ elevation: 3 }}>
-          <Text className="text-xl">{isDarkMode ? "☀️" : "🌙"}</Text>
-        </TouchableOpacity>
-      </View>
+      <Header 
+        title="Live Tracking"
+        onBack={onBack}
+        isDarkMode={isDarkMode}
+        absolutePosition={true}
+        rightAction={<ThemeToggle isDarkMode={isDarkMode} onToggle={setIsDarkMode} />}
+      />
 
       {/* Leaflet Map */}
       <View className="flex-1">

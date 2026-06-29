@@ -7,6 +7,8 @@ import Geolocation from '@react-native-community/geolocation';
 import { ref, set, remove } from 'firebase/database';
 import { database } from '../firebaseConfig';
 import { ROUTES } from '../data/routes';
+import Header from '../components/Header';
+import Button from '../components/Button';
 
 const sleep = (time: any) => new Promise<void>((resolve) => setTimeout(() => resolve(), time));
 
@@ -152,19 +154,12 @@ const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       {/* Header */}
-      <View className="flex-row items-center px-6 py-4">
-        <TouchableOpacity 
-          onPress={() => {
-            if (onBack) onBack();
-          }} 
-          className="w-10 h-10 bg-slate-800 items-center justify-center rounded-full border border-slate-700/50 shadow-sm"
-        >
-          <Text className="text-[#147C41] text-3xl font-bold leading-none">←</Text>
-        </TouchableOpacity>
-        <Text className="flex-1 text-center text-xl font-bold text-slate-100 mr-10">
-          Share Live Location
-        </Text>
-      </View>
+      <Header 
+        title="Share Live Location"
+        onBack={onBack}
+        isDarkMode={true}
+        transparentBackground={true}
+      />
 
       <ScrollView className="flex-1 px-6 pt-6" showsVerticalScrollIndicator={false}>
 
@@ -250,29 +245,13 @@ const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
         </View>
 
         {/* Broadcast Toggle Button */}
-        <TouchableOpacity
-          disabled={!isReady}
-          activeOpacity={0.8}
+        <Button 
+          title={!isReady ? 'Select a Route' : isBroadcasting ? 'Stop Broadcasting' : 'Start Broadcasting'}
           onPress={toggleBroadcast}
-          className={`w-full py-5 rounded-2xl shadow-sm items-center justify-center ${
-            !isReady 
-              ? 'bg-slate-200' 
-              : isBroadcasting 
-                ? 'bg-[#C41E3A]' 
-                : 'bg-[#147C41]'
-          }`}
-          style={isReady ? { elevation: 4 } : {}}
-        >
-          <Text className={`text-lg font-bold tracking-wider uppercase ${
-            !isReady ? 'text-slate-500' : 'text-white'
-          }`}>
-            {!isReady 
-              ? 'Select a Route' 
-              : isBroadcasting 
-                ? 'Stop Broadcasting' 
-                : 'Start Broadcasting'}
-          </Text>
-        </TouchableOpacity>
+          disabled={!isReady}
+          variant={isBroadcasting ? 'danger' : 'primary'}
+          size="large"
+        />
 
         <View className="h-32" />
       </ScrollView>

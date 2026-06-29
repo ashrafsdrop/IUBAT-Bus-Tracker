@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ThemeToggle from '../components/ThemeToggle';
 
 const { width, height } = Dimensions.get('window');
 
@@ -206,11 +207,11 @@ const WelcomeScreen = ({ onNavigate, isDarkMode, setIsDarkMode }: { onNavigate?:
       >
         {/* Header Section */}
         <View style={styles.header}>
-          <TouchableOpacity 
-            onPress={() => setIsDarkMode(!isDarkMode)} 
-            style={{ position: 'absolute', top: 0, right: 0, zIndex: 10, padding: 10, backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF', borderRadius: 20, shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 }}>
-            <Text style={{ fontSize: 24 }}>{isDarkMode ? "☀️" : "🌙"}</Text>
-          </TouchableOpacity>
+          <ThemeToggle 
+            isDarkMode={isDarkMode}
+            onToggle={setIsDarkMode}
+            style={{ position: 'absolute', top: 0, right: 0, zIndex: 10, padding: 0 }}
+          />
           {/* Logo with Ring Animation */}
           <Animated.View style={[
             styles.logoWrapper,

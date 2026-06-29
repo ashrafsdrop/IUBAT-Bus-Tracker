@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StatusBar, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ROUTES } from '../data/routes';
+import Header from '../components/Header';
+import Button from '../components/Button';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -25,15 +27,11 @@ const SelectionScreen = ({ onBack, onNavigate }: { onBack?: () => void, onNaviga
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
       
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 bg-[#FCFBF8] z-10">
-        <TouchableOpacity onPress={onBack} className="w-10 h-10 items-center justify-center rounded-full">
-          <Text className="text-[#147C41] text-3xl font-bold leading-none">←</Text>
-        </TouchableOpacity>
-        <Text className="flex-1 text-center text-xl font-bold text-slate-800">
-          Select Your Route
-        </Text>
-        <View className="w-10" />
-      </View>
+      <Header 
+        title="Select Your Route"
+        onBack={onBack}
+        transparentBackground={true}
+      />
 
       <ScrollView className="flex-1 px-4 pt-2" showsVerticalScrollIndicator={false}>
         
@@ -127,18 +125,11 @@ const SelectionScreen = ({ onBack, onNavigate }: { onBack?: () => void, onNaviga
 
       {/* Action Button */}
       <View className="absolute bottom-0 left-0 right-0 p-6 bg-[#FCFBF8]/95 border-t border-slate-100">
-        <TouchableOpacity
-          disabled={!isContinueEnabled}
+        <Button 
+          title="Continue to Map"
           onPress={() => onNavigate && onNavigate('Map')}
-          className={`py-4 rounded-2xl items-center justify-center ${
-            isContinueEnabled ? 'bg-[#147C41] shadow-lg' : 'bg-slate-200'
-          }`}
-          style={isContinueEnabled ? { elevation: 4, shadowColor: '#147C41', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 12 } : {}}
-        >
-          <Text className={`text-lg font-bold tracking-wide ${isContinueEnabled ? 'text-white' : 'text-slate-400'}`}>
-            Continue to Map
-          </Text>
-        </TouchableOpacity>
+          disabled={!isContinueEnabled}
+        />
       </View>
     </View>
   );
