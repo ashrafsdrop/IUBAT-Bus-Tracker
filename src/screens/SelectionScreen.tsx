@@ -89,10 +89,10 @@ const SelectionScreen = ({ onBack, onNavigate }: { onBack?: () => void, onNaviga
                   <TouchableOpacity
                     activeOpacity={0.9}
                     onPress={() => handleRouteSelect(route.id)}
-                    className={`p-4 rounded-2xl border-2 z-10 ${
-                      isSelected ? 'border-[#147C41] bg-[#147C41]/5' : 'border-transparent bg-white'
-                    }`}
-                    style={{ elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 }}
+                    className={`p-4 border-2 z-10 ${
+                      isSelected ? 'border-[#147C41] bg-[#F0FDF4]' : 'border-transparent bg-white'
+                    } ${isExpanded ? 'rounded-t-2xl border-b-0' : 'rounded-2xl shadow-sm'}`}
+                    style={!isExpanded ? { elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 } : {}}
                   >
                     <View className="flex-row items-start justify-between">
                       <View className="flex-1 pr-4">
@@ -119,7 +119,7 @@ const SelectionScreen = ({ onBack, onNavigate }: { onBack?: () => void, onNaviga
 
                   {/* Expandable Stops Timeline */}
                   {isExpanded && (
-                    <View className="bg-white mx-2 px-4 py-4 rounded-b-2xl border-x border-b border-slate-100" style={{ marginTop: -15, paddingTop: 25, zIndex: 1 }}>
+                    <View className={`bg-white px-4 py-4 rounded-b-2xl border-2 border-t-0 ${isSelected ? 'border-[#147C41]' : 'border-slate-100'}`}>
                       <Text className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 mt-2">Route Schedule</Text>
                       {route.stops.map((stop, index) => {
                         const isFirst = index === 0;

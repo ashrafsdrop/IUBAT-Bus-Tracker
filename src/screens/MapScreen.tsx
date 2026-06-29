@@ -503,11 +503,16 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode }: { onBack?: () => void,
                     map.removeControl(tempRoutingControl);
                 }
 
+                var now = new Date();
+                var isEvening = now.getHours() > 17 || (now.getHours() === 17 && now.getMinutes() >= 20);
+                var campusLoc = L.latLng(23.8815, 90.3888);
+                var busLoc = activeBusMarker.getLatLng();
+                
+                // Morning: Bus -> Campus. Evening: Campus -> Bus
+                var waypointsToRoute = isEvening ? [campusLoc, busLoc] : [busLoc, campusLoc];
+
                 tempRoutingControl = L.Routing.control({
-                    waypoints: [
-                        activeBusMarker.getLatLng(),
-                        studentMarker.getLatLng()
-                    ],
+                    waypoints: waypointsToRoute,
                     addWaypoints: false,
                     show: false,
                     createMarker: function() { return null; },
@@ -521,9 +526,12 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode }: { onBack?: () => void,
                     if (activeRouteLine) {
                         map.removeLayer(activeRouteLine);
                     }
+                    
+                    // Highlight the actual bus route!
                     activeRouteLine = L.polyline(coordinates, { color: '#147C41', opacity: 0.8, weight: 6 }).addTo(map);
                     
                     var realEtaMinutes = Math.round(route.summary.totalTime / 60);
+                    var etaText = isEvening ? realEtaMinutes + " min from Campus" : realEtaMinutes + " min to Campus";
 
                     if (window.ReactNativeWebView) {
                         window.ReactNativeWebView.postMessage(JSON.stringify({
@@ -531,7 +539,7 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode }: { onBack?: () => void,
                             payload: {
                                 bus: currentBusName,
                                 route: currentRouteName,
-                                time: realEtaMinutes + " min away"
+                                time: etaText
                             }
                         }));
                     }
