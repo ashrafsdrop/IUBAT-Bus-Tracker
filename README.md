@@ -1,97 +1,109 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+<div align="center">
+  <img src="./android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="IUBAT Bus Tracker Logo" width="120" />
 
-# Getting Started
+  # 🚌 IUBAT Bus Tracker
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+  **A community-driven real-time GPS tracking application for IUBAT university buses.**
 
-## Step 1: Start Metro
+  <p align="center">
+    <a href="#features">Features</a> •
+    <a href="#tech-stack">Tech Stack</a> •
+    <a href="#installation">Installation</a> •
+    <a href="#architecture">Architecture</a> •
+    <a href="#contributing">Contributing</a>
+  </p>
+</div>
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+---
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## 🌟 Overview
 
-```sh
-# Using npm
+The **IUBAT Bus Tracker** is a React Native mobile application built to eliminate the uncertainty of waiting for university transport. Designed specifically for the students of the International University of Business Agriculture and Technology (IUBAT), this app provides a live map displaying the exact locations of active university buses.
+
+What makes this project unique is its **community-driven** approach. Instead of relying on expensive hardware trackers installed on the buses, any student riding the bus can securely broadcast their location in the background, serving as a beacon for hundreds of other students waiting down the route.
+
+## ✨ Features
+
+- **Live GPS Tracking:** Watch buses move in real-time on a smooth, interactive Leaflet map.
+- **Background Broadcasting:** A dedicated "Seeder" mode allows volunteers to broadcast their GPS coordinates securely in the background, minimizing battery drain.
+- **Smart Route Filtering:** Search and select your specific route. The map automatically isolates and displays only the buses relevant to your journey.
+- **Dynamic ETA Engine:** Tap an active bus to generate a live driving path and an Estimated Time of Arrival (ETA). The engine intelligently understands whether the bus is heading *to* campus (morning) or *from* campus (afternoon).
+- **Anti-Spam & Moderation:** A built-in reporting system allows users to flag fake broadcasts. Buses with 3 or more reports are automatically banished from the map.
+- **Self-Cleaning Database:** Firebase synchronization automatically filters out stale data (buses inactive for > 2 hours).
+- **Modern UI:** Built with NativeWind (Tailwind CSS), featuring seamless animations and comprehensive Light/Dark mode support.
+
+## 🛠 Tech Stack
+
+- **Framework:** [React Native](https://reactnative.dev/) (CLI)
+- **Styling:** [NativeWind](https://www.nativewind.dev/) (Tailwind CSS for React Native)
+- **Database:** [Firebase Realtime Database](https://firebase.google.com/docs/database)
+- **Mapping:** [Leaflet](https://leafletjs.com/) rendered via `react-native-webview`
+- **Background Tasks:** `react-native-background-actions`
+- **Geolocation:** `@react-native-community/geolocation`
+- **Notifications:** `@notifee/react-native`
+
+## 🚀 Installation & Local Development
+
+### Prerequisites
+- Node.js (v22.11.0 or newer)
+- Android Studio & Android SDK
+- Java Development Kit (JDK 17)
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/ashrafsdrop/IUBAT-Bus-Tracker.git
+cd IUBAT-Bus-Tracker
+```
+
+### 2. Install dependencies
+```bash
+npm install
+```
+
+### 3. Firebase Configuration
+You will need to set up a Firebase Realtime Database.
+1. Create a Firebase Project.
+2. Enable Realtime Database.
+3. Update `src/firebaseConfig.ts` with your project's credentials.
+
+### 4. Run the application
+```bash
+# Start the Metro bundler
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+# In a new terminal, run the app on an Android emulator or physical device
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+## 📦 Building for Production
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+To generate a signed, production-ready APK with ProGuard obfuscation enabled:
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+```bash
+cd android
+./gradlew assembleRelease
 ```
+The compiled APK will be available at `android/app/build/outputs/apk/release/app-release.apk`.
 
-Then, and every time you update your native dependencies, run:
+## 🏗 Architecture & Core Concepts
 
-```sh
-bundle exec pod install
-```
+- **Bi-Directional Mapping:** The map is rendered using a highly optimized injected Leaflet instance inside a WebView. React Native and the WebView communicate bi-directionally using `postMessage` and `injectJavaScript`.
+- **Stateless Client Routing:** The React Native client calculates route ETAs dynamically using the OSRM (Open Source Routing Machine) network via Leaflet Routing Machine.
+- **Jitter Algorithm:** To prevent multiple buses on the same route from perfectly overlapping and hiding each other on the map, a deterministic radial jitter is applied based on the bus identifier.
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## 🤝 Contributing
 
-```sh
-# Using npm
-npm run ios
+This is an open-source initiative for the IUBAT community. Contributions, issues, and feature requests are highly welcome!
 
-# OR using Yarn
-yarn ios
-```
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## 📄 License
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+This project is open-source and distributed under the [MIT License](LICENSE).
 
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+---
+*Created with ❤️ for the IUBAT Community.*
