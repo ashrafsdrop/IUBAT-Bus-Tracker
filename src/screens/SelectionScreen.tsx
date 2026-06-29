@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, LayoutAnimation, Platform, UIManager, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ROUTES } from '../data/routes';
 import Header from '../components/Header';
@@ -13,6 +13,16 @@ const SelectionScreen = ({ onBack, onNavigate }: { onBack?: () => void, onNaviga
   const insets = useSafeAreaInsets();
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
   const [expandedRoute, setExpandedRoute] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredRoutes = useMemo(() => {
+    if (!searchQuery.trim()) return ROUTES;
+    const query = searchQuery.toLowerCase().trim();
+    return ROUTES.filter(route => 
+      route.name.toLowerCase().includes(query) || 
+      route.stops.some(stop => stop.name.toLowerCase().includes(query))
+    );
+  }, [searchQuery]);
 
   const handleRouteSelect = (routeId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -33,6 +43,25 @@ const SelectionScreen = ({ onBack, onNavigate }: { onBack?: () => void, onNaviga
         transparentBackground={true}
       />
 
+      <View className="px-4 py-2 z-10">
+        <View className="flex-row items-center bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm" style={{ elevation: 2 }}>
+          <Text className="text-lg mr-3">🔍</Text>
+          <TextInput
+            className="flex-1 text-base font-medium text-slate-800 p-0"
+            placeholder="Search destination (e.g. Uttara)"
+            placeholderTextColor="#94A3B8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCorrect={false}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} className="ml-2">
+              <Text className="text-slate-400 text-lg font-bold">✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       <ScrollView className="flex-1 px-4 pt-2" showsVerticalScrollIndicator={false}>
         
         <View className="mb-8">
@@ -40,7 +69,16 @@ const SelectionScreen = ({ onBack, onNavigate }: { onBack?: () => void, onNaviga
             Available Routes
           </Text>
           <View>
-            {ROUTES.map((route) => {
+            {filteredRoutes.length === 0 ? (
+              <View className="items-center py-10">
+                <Text className="text-4xl mb-4">🗺️</Text>
+                <Text className="text-lg font-bold text-slate-600">No routes found</Text>
+                <Text className="text-sm text-slate-400 text-center mt-2 px-6">
+                  We couldn't find any bus route stopping at "{searchQuery}".
+                </Text>
+              </View>
+            ) : (
+              filteredRoutes.map((route) => {
               const isSelected = selectedRoute === route.id;
               const isExpanded = expandedRoute === route.id;
               const firstStop = route.stops[0];
@@ -116,7 +154,7 @@ const SelectionScreen = ({ onBack, onNavigate }: { onBack?: () => void, onNaviga
                   )}
                 </View>
               );
-            })}
+            }))}
           </View>
         </View>
 

@@ -267,7 +267,7 @@ const WelcomeScreen = ({ onNavigate, isDarkMode, setIsDarkMode }: { onNavigate?:
               activeOpacity={0.9}
               onPressIn={() => handlePressIn(studentScale)}
               onPressOut={() => handlePressOut(studentScale)}
-              onPress={() => onNavigate && onNavigate('Map')}
+              onPress={() => onNavigate && onNavigate('Selection')}
               style={[styles.card, { backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF', borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(20, 124, 65, 0.08)' }]}
             >
               <View style={styles.cardContent}>
