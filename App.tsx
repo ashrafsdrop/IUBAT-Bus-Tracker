@@ -1,45 +1,33 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import './global.css';
+import React, { useState } from 'react';
+import { useColorScheme } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import WelcomeScreen from './src/screens/WelcomeScreen';
+import SelectionScreen from './src/screens/SelectionScreen';
+import SeederScreen from './src/screens/SeederScreen';
+import MapScreen from './src/screens/MapScreen';
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  const systemTheme = useColorScheme();
+  const [currentScreen, setCurrentScreen] = useState('Welcome');
+  const [isDarkMode, setIsDarkMode] = useState(systemTheme === 'dark');
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      {currentScreen === 'Welcome' && (
+        <WelcomeScreen onNavigate={(screen) => setCurrentScreen(screen)} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+      )}
+      {currentScreen === 'Selection' && (
+        <SelectionScreen onBack={() => setCurrentScreen('Welcome')} onNavigate={(screen) => setCurrentScreen(screen)} isDarkMode={isDarkMode} />
+      )}
+      {currentScreen === 'Seeder' && (
+        <SeederScreen onBack={() => setCurrentScreen('Welcome')} isDarkMode={isDarkMode} />
+      )}
+      {currentScreen === 'Map' && (
+        <MapScreen onBack={() => setCurrentScreen('Welcome')} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+      )}
     </SafeAreaProvider>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default App;
