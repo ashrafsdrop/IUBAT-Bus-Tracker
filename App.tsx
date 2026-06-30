@@ -1,6 +1,6 @@
 import './global.css';
 import React, { useState, useEffect } from 'react';
-import { useColorScheme, PermissionsAndroid, Platform, Alert, Linking } from 'react-native';
+import { useColorScheme, PermissionsAndroid, Platform, Alert, Linking, BackHandler } from 'react-native';
 
 const CURRENT_APP_VERSION = 'v1.0.0'; // Hardcode your current app version here
 const GITHUB_REPO = 'ashrafsdrop/IUBAT-Bus-Tracker'; // Your GitHub repository
@@ -82,6 +82,26 @@ function App() {
     if (routeId) setSelectedRouteId(routeId);
     setCurrentScreen(screen);
   };
+
+  useEffect(() => {
+    const backAction = () => {
+      // If we are not on the Welcome screen, intercept the back button
+      // and send the user back to the Welcome screen instead of closing the app.
+      if (currentScreen !== 'Welcome') {
+        setCurrentScreen('Welcome');
+        return true; 
+      }
+      // If we are on the Welcome screen, let the default behavior happen (exit app)
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
+
+    return () => backHandler.remove();
+  }, [currentScreen]);
 
   return (
     <SafeAreaProvider>
