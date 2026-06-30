@@ -236,17 +236,14 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode, selectedRouteId }: { onB
       // 1. Request Location Permission first
       if (Platform.OS === 'android') {
         try {
-          const granted = await PermissionsAndroid.request(
+          const granted = await PermissionsAndroid.requestMultiple([
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            {
-              title: 'Location Permission',
-              message: 'Bus Tracker needs access to your location to show buses nearby.',
-              buttonNeutral: 'Ask Me Later',
-              buttonNegative: 'Cancel',
-              buttonPositive: 'OK',
-            },
-          );
-          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+          ]);
+          if (
+            granted[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED ||
+            granted[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED
+          ) {
             getLocation();
           }
         } catch (err) { console.warn(err); }
@@ -261,6 +258,14 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode, selectedRouteId }: { onB
 
       // 3. Start Background Job securely now that we have permissions
       try {
+        if (Platform.OS === 'android') {
+            const hasLocation = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION) || await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION);
+            if (!hasLocation) {
+                console.log("Location permission denied. Cannot start background tracker.");
+                return;
+            }
+        }
+
         if (!BackgroundJob.isRunning()) {
           await BackgroundJob.start(passengerBgTask, passengerBgOptions);
         } else {
@@ -383,7 +388,7 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode, selectedRouteId }: { onB
             }
             /* Push the controls up so they don't hide behind our React Native info card */
             .leaflet-bottom.leaflet-right {
-                margin-bottom: 130px !important; 
+                margin-bottom: 200px !important; 
                 margin-right: 15px !important;
             }
         </style>
@@ -602,6 +607,7 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode, selectedRouteId }: { onB
                 etaInterval = setInterval(fetchRouteAndEta, 60000);
 
                 busMarker.bindPopup("<b>" + busName + "</b><br>Route mapped!").openPopup();
+                map.panTo(busMarker.getLatLng(), { animate: true });
             }
 
             // Firebase marker management
@@ -611,6 +617,32 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode, selectedRouteId }: { onB
             window.updateFirebaseBuses = function(buses) {
                 var uLoc = studentMarker.getLatLng();
                 var distancesPayload = [];
+
+                // Remove markers that are no longer in the Firebase buses object (e.g. seeder stopped)
+                for (let existingBusName in window.busMarkers) {
+                    if (!buses[existingBusName]) {
+                        map.removeLayer(window.busMarkers[existingBusName]);
+                        delete window.busMarkers[existingBusName];
+                        delete window.busHeadings[existingBusName];
+                        
+                        // Clear active routing if the selected bus vanished
+                        if (currentBusName === existingBusName) {
+                            if (activeRouteLine) {
+                                map.removeLayer(activeRouteLine);
+                                activeRouteLine = null;
+                            }
+                            if (etaInterval) {
+                                clearInterval(etaInterval);
+                                etaInterval = null;
+                            }
+                            if (window.ReactNativeWebView) {
+                                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'BUS_DESELECTED' }));
+                            }
+                            activeBusMarker = null;
+                            currentBusName = "";
+                        }
+                    }
+                }
 
                 for (let busName in buses) {
                     let b = buses[busName];
@@ -656,10 +688,23 @@ const MapScreen = ({ onBack, isDarkMode, setIsDarkMode, selectedRouteId }: { onB
                     }
 
                     // Smoothly stretch the active route line to stay attached to the moving bus
-                    if (activeBusMarker === window.busMarkers[busName] && activeRouteLine) {
-                        var latlngs = activeRouteLine.getLatLngs();
-                        latlngs[0] = window.busMarkers[busName].getLatLng(); 
-                        activeRouteLine.setLatLngs(latlngs);
+                    if (activeBusMarker === window.busMarkers[busName]) {
+                        if (activeRouteLine) {
+                            var latlngs = activeRouteLine.getLatLngs();
+                            var busLoc = window.busMarkers[busName].getLatLng();
+                            // Determine which end of the route is closer to the bus
+                            var distToStart = busLoc.distanceTo(latlngs[0]);
+                            var distToEnd = busLoc.distanceTo(latlngs[latlngs.length - 1]);
+                            
+                            if (distToStart < distToEnd) {
+                                latlngs[0] = busLoc;
+                            } else {
+                                latlngs[latlngs.length - 1] = busLoc;
+                            }
+                            activeRouteLine.setLatLngs(latlngs);
+                        }
+                        // Make the map follow the bus!
+                        map.panTo(newLoc, { animate: true, duration: 1.0 });
                     }
 
                     // Calculate distance to trigger React Native In-App Banner

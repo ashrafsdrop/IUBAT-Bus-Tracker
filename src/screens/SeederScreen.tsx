@@ -4,11 +4,12 @@ import * as import_react_native from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackgroundJob from 'react-native-background-actions';
 import Geolocation from '@react-native-community/geolocation';
-import { ref, set, remove } from 'firebase/database';
+import { ref, set, remove, update, onDisconnect } from 'firebase/database';
 import { database } from '../firebaseConfig';
 import { ROUTES } from '../data/routes';
 import Header from '../components/Header';
 import Button from '../components/Button';
+import ThemeToggle from '../components/ThemeToggle';
 
 const sleep = (time: any) => new Promise<void>((resolve) => setTimeout(() => resolve(), time));
 
@@ -84,12 +85,12 @@ const CROWD_LEVELS = [
   { id: 'Packed', color: '#C41E3A' }
 ];
 
-const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
+const SeederScreen = ({ onBack, isDarkMode, setIsDarkMode }: { onBack?: () => void, isDarkMode?: boolean, setIsDarkMode?: (val: boolean) => void }) => {
   const insets = useSafeAreaInsets();
   const [selectedRoute, setSelectedRoute] = useState<string | null>(globalSelectedRoute);
   const [crowdLevel, setCrowdLevel] = useState<string>(globalCrowdLevel);
   const [busNo, setBusNo] = useState<string>(globalBusNo);
-  const [isBroadcasting, setIsBroadcasting] = useState(BackgroundJob.isRunning());
+  const [isBroadcasting, setIsBroadcasting] = useState(BackgroundJob.isRunning() && globalSelectedRoute !== null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const isReady = selectedRoute !== null || isBroadcasting;
@@ -126,18 +127,36 @@ const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
       } else {
         // Generate a new unique session ID each time we start broadcasting
         globalSessionId = Math.random().toString(36).substring(2, 8);
-        // Request notification permission for Android 13+ before starting foreground service
-        if (Platform.OS === 'android' && Platform.Version >= 33) {
+        if (Platform.OS === 'android') {
             try {
-                await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+                let permissionsToRequest = [
+                    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                    PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
+                ];
+                if (Platform.Version >= 33) {
+                    permissionsToRequest.push(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+                }
+                await PermissionsAndroid.requestMultiple(permissionsToRequest);
             } catch (e) {
                 console.warn(e);
+            }
+            
+            // Verify if permission was actually granted
+            const hasLocation = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION) || await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION);
+            if (!hasLocation) {
+                alert("Location permission is required to broadcast.");
+                return;
             }
         }
         
         setIsBroadcasting(true);
         try {
             await BackgroundJob.stop(); // Stop passenger tracker or old broadcasts
+            
+            // Automatically remove this seeder's node if the connection drops or app force-closes
+            const busRef = ref(database, `buses/${selectedRoute}_${globalSessionId}`);
+            onDisconnect(busRef).remove();
+
             await BackgroundJob.start(backgroundTask, { 
               ...bgOptions, 
               parameters: { delay: 5000, busId: selectedRoute } 
@@ -150,22 +169,23 @@ const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
   };
 
   return (
-    <View className="flex-1 bg-slate-900" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+    <View className={`flex-1 ${isDarkMode ? 'bg-slate-900' : 'bg-[#FCFBF8]'}`} style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent={true} />
 
       {/* Header */}
       <Header 
         title="Share Live Location"
         onBack={onBack}
-        isDarkMode={true}
+        isDarkMode={isDarkMode}
         transparentBackground={true}
+        rightAction={setIsDarkMode ? <ThemeToggle isDarkMode={!!isDarkMode} onToggle={setIsDarkMode} /> : undefined}
       />
 
       <ScrollView className="flex-1 px-6 pt-6" showsVerticalScrollIndicator={false}>
 
         {/* Route Selection Area */}
         <View className="mb-12">
-          <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 ml-1">Select Route</Text>
+          <Text className={`text-xs font-bold uppercase tracking-widest mb-4 ml-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Select Route</Text>
           <View className="flex-row flex-wrap gap-3">
             {ROUTES.map((route) => (
               <TouchableOpacity
@@ -182,12 +202,12 @@ const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
                 }}
                 className={`px-5 py-3 rounded-xl border shadow-sm ${
                   selectedRoute === route.id 
-                    ? 'bg-[#147C41] border-[#147C41]' 
-                    : 'bg-slate-800 border-slate-700'
+                    ? (isDarkMode ? 'bg-[#064E3B] border-[#147C41]' : 'bg-[#F0FDF4] border-[#147C41]')
+                    : (isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200')
                 } ${isBroadcasting ? 'opacity-50' : 'opacity-100'}`}
               >
                 <Text className={`font-bold tracking-wide ${
-                  selectedRoute === route.id ? 'text-white' : 'text-slate-300'
+                  selectedRoute === route.id ? (isDarkMode ? 'text-[#34D399]' : 'text-[#147C41]') : (isDarkMode ? 'text-slate-300' : 'text-slate-600')
                 }`}>
                   {route.name}
                 </Text>
@@ -198,7 +218,7 @@ const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
 
         {/* Crowding Selection Area */}
         <View className="mb-12">
-          <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 ml-1">How full is the bus?</Text>
+          <Text className={`text-xs font-bold uppercase tracking-widest mb-4 ml-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>How full is the bus?</Text>
           <View className="flex-row gap-3">
             {CROWD_LEVELS.map((level) => (
               <TouchableOpacity
@@ -206,16 +226,22 @@ const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
                 onPress={() => {
                   setCrowdLevel(level.id);
                   globalCrowdLevel = level.id;
+                  if (isBroadcasting && selectedRoute) {
+                    update(ref(database, `buses/${selectedRoute}_${globalSessionId}`), {
+                      crowd: level.id,
+                      timestamp: Date.now()
+                    }).catch(e => console.log("Firebase Update Error:", e));
+                  }
                 }}
                 className="flex-1 py-4 rounded-xl items-center border"
                 style={{
-                  backgroundColor: crowdLevel === level.id ? level.color : 'white',
-                  borderColor: crowdLevel === level.id ? level.color : '#E2E8F0',
+                  backgroundColor: crowdLevel === level.id ? level.color : (isDarkMode ? '#1E293B' : 'white'),
+                  borderColor: crowdLevel === level.id ? level.color : (isDarkMode ? '#334155' : '#E2E8F0'),
                   elevation: crowdLevel === level.id ? 2 : 0
                 }}
               >
                 <Text style={{
-                  color: crowdLevel === level.id ? 'white' : '#64748B',
+                  color: crowdLevel === level.id ? 'white' : (isDarkMode ? '#94A3B8' : '#64748B'),
                   fontWeight: 'bold',
                   fontSize: 14
                 }}>
@@ -224,12 +250,12 @@ const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
               </TouchableOpacity>
             ))}
           </View>
-          <Text className="text-xs text-slate-500 mt-3 italic text-center">You can change this at any time while broadcasting.</Text>
+          <Text className={`text-xs mt-3 italic text-center ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>You can change this at any time while broadcasting.</Text>
         </View>
 
         {/* Bus Number Selection Area */}
         <View className="mb-12">
-          <Text className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 ml-1">Bus Number</Text>
+          <Text className={`text-xs font-bold uppercase tracking-widest mb-4 ml-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Bus Number</Text>
           <import_react_native.TextInput
             value={busNo}
             onChangeText={(t) => {
@@ -237,11 +263,11 @@ const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
               globalBusNo = t;
             }}
             placeholder="e.g. 26"
-            placeholderTextColor="#64748B"
+            placeholderTextColor={isDarkMode ? '#64748B' : '#94A3B8'}
             keyboardType="numeric"
-            className="bg-slate-800 border border-slate-700 text-white font-bold text-xl px-5 py-4 rounded-xl"
+            className={`border font-bold text-xl px-5 py-4 rounded-xl ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
           />
-          <Text className="text-xs text-slate-500 mt-3 italic ml-1">We automatically fill this when you pick a route, but you can change it if you are driving a different bus.</Text>
+          <Text className={`text-xs mt-3 italic ml-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>We automatically fill this when you pick a route, but you can change it if you are driving a different bus.</Text>
         </View>
 
         {/* Broadcast Toggle Button */}
@@ -259,7 +285,7 @@ const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
       {/* Live Status Indicator (Absolute Positioned at Bottom) */}
       {isBroadcasting && (
         <View className="absolute bottom-10 left-6 right-6">
-          <View className="bg-slate-800 p-5 rounded-3xl shadow-lg border border-red-50 flex-row items-center" style={{ elevation: 10 }}>
+          <View className={`p-5 rounded-3xl shadow-lg border flex-row items-center ${isDarkMode ? 'bg-slate-800 border-red-900/30' : 'bg-white border-red-100'}`} style={{ elevation: 10 }}>
             {/* Pulsing Red Dot */}
             <View className="relative w-4 h-4 mr-4 items-center justify-center">
               <Animated.View 
@@ -274,7 +300,7 @@ const SeederScreen = ({ onBack }: { onBack?: () => void }) => {
             
             <View className="flex-1">
               <Text className="text-[10px] font-bold text-[#C41E3A] uppercase tracking-widest mb-1">Live Status</Text>
-              <Text className="text-slate-100 font-bold">Broadcasting GPS for <Text className="text-[#147C41]">{ROUTES.find(r => r.id === selectedRoute)?.name || "Active Route"}</Text></Text>
+              <Text className={`font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Broadcasting GPS for <Text className="text-[#147C41]">{ROUTES.find(r => r.id === selectedRoute)?.name || "Active Route"}</Text></Text>
             </View>
           </View>
         </View>
